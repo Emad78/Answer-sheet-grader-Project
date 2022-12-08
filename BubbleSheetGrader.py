@@ -2,6 +2,7 @@ import cv2
 import pickle
 import numpy as np
 import imutils
+from imutils import contours as cont
 
 class BubbleSheetGrader:
     """Class for reading image with BubbleSheet answer and grading that."""
@@ -46,6 +47,27 @@ class BubbleSheetGrader:
         answer_box = self.crop_contour_area(screenCnt[0], self.pre_processed_image)
         return answer_box
     
+    def detect_bubbles(self, answer_box):
+        """Detecting bubbles in answer box"""
+        binary_image = cv2.threshold(answer_box, 0, 255,cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+        self.show_image(binary_image)
+        contours = cv2.findContours(binary_image, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        contours = imutils.grab_contours(contours)
+        
+        area = list(map(lambda x: cv2.contourArea(x), contours))
+        area_average = sum(area) / len(area)
+        contours = list(filter(lambda x: cv2.contourArea(x) > area_average, contours))
+        
+        bubbles_contours = []
+        for c in contours:
+            (_, _, w, h) = cv2.boundingRect(c)
+            ar = w / float(h)
+            if ar >= 0.9 and ar <= 1.10:
+                bubbles_contours.append(c)
+        bubbles_contours = cont.sort_contours(bubbles_contours, method="left-to-right")[0]
+
+        bubbles_contours = cont.sort_contours(bubbles_contours, method="top-to-bottom")[0]
+             
     def crop_contour_area(self, contour, image):
         """Crop contour area from input image"""
         x,y,w,h= cv2.boundingRect(contour)
@@ -59,4 +81,4 @@ class BubbleSheetGrader:
 
 bsg = BubbleSheetGrader('data/standardSample/sample (7).bmp')
 bsg.pre_process()
-bsg.show_image(bsg.detect_answer_box())
+bsg.detect_bubbles(bsg.detect_answer_box())
