@@ -2,6 +2,7 @@ import pickle
 import cv2
 import imutils
 from imutils import contours as cont
+import numpy as np
 
 class BubbleSheetGrader:
     """Class for reading image with BubbleSheet answer and grading that."""
@@ -71,7 +72,32 @@ class BubbleSheetGrader:
 
         bubbles_contours = cont.sort_contours(bubbles_contours, method="left-to-right")[0]
         bubbles_contours = cont.sort_contours(bubbles_contours, method="top-to-bottom")[0]
+        self.extract_marked_bubbles(answer_box, bubbles_contours)
         return bubbles_contours
+
+    def extract_marked_bubbles(self, binary_box, bubbles):
+        """Extract marked and unmarked bubbles per columns"""
+
+        marked = []
+        row = []
+        last_x = 0
+        for bubble in bubbles:
+            x, _, _, _= cv2.boundingRect(bubble)
+            if x < last_x:
+                marked.append(row)
+                row = []
+            last_x = x
+            mask = np.zeros(binary_box.shape, dtype="uint8")
+            cv2.drawContours(mask, [bubble], -1, 255, -1)
+            mask = cv2.bitwise_and(binary_box, binary_box, mask=mask)
+            total = cv2.countNonZero(mask)
+            if total > (1.08*cv2.contourArea(bubble)):
+                row.append(0)
+            else:
+                row.append(1)
+        print(marked)
+        return marked
+
 
     def crop_contour_area(self, contour, image):
         """Crop contour area from input image"""
