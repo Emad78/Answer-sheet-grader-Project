@@ -76,7 +76,7 @@ class BubbleSheetGrader:
         return bubbles_contours
 
     def extract_marked_bubbles(self, binary_box, bubbles):
-        """Extract marked and unmarked bubbles per columns"""
+        """Extract marked and unmarked bubbles per rows"""
 
         marked = []
         row = []
@@ -95,9 +95,23 @@ class BubbleSheetGrader:
                 row.append(0)
             else:
                 row.append(1)
-        print(marked)
+        self.find_answer_per_question(marked)
         return marked
 
+    def find_answer_per_question(self, marked):
+        """Find answer per question"""
+        row_number = len(marked)
+        answers = [[] for i in range(len(marked[0])//4)]
+        for row in range(row_number):
+            for col, _ in enumerate((answers)):
+                answer = [marked[row][4*col], marked[row][4*col+1], marked[row][4*col+2], marked[row][4*col+3]]
+                answers[col].append(answer)
+
+        final_answers = []
+        for answer in answers:
+            final_answers += answer
+        print(final_answers)
+        return final_answers
 
     def crop_contour_area(self, contour, image):
         """Crop contour area from input image"""
