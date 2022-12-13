@@ -129,8 +129,16 @@ class BubbleSheetGrader:
                 result.append(1)
             else:
                 result.append(-1)
-        print(result)
+        self.grading_exam(result)
         return result
+
+    def grading_exam(self, result):
+        """Grading exam"""
+        negative_answer = (-1 * result.count(-1)) if -1 in result else 0
+        positive_answer = 3*result.count(1) if 1 in result else 0
+        final_grade = (positive_answer + negative_answer)/(3*len(result)) * 100
+        print(final_grade)
+        return final_grade
 
     def crop_contour_area(self, contour, image):
         """Crop contour area from input image"""
