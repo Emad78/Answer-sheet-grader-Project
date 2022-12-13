@@ -1,4 +1,3 @@
-import pickle
 import cv2
 import imutils
 from imutils import contours as cont
@@ -12,16 +11,13 @@ class BubbleSheetGrader:
 
         self.image = cv2.imread(path)
         self.image = imutils.resize(self.image, height = 1000)
-        self.box_template = []
-
-        with open('data/template/rectangle.temp', 'rb') as file:
-            self.box_template.append(pickle.load(file))
-        with open('data/template/square.temp', 'rb') as file:
-            self.box_template.append(pickle.load(file))
-        with open('data/template/bubble.temp', 'rb') as file:
-            self.bubble = pickle.load(file)
 
         self.pre_processed_image = None
+        self.result = None
+        self.grade = None
+        self.answers = None
+
+        self.correct_answers = [1, 1, 2, 1, 2, 1, 1, 2, 1, 4]
 
     def pre_process(self):
         """Pre processing image"""
@@ -55,7 +51,6 @@ class BubbleSheetGrader:
         """Detecting bubbles in answer box"""
 
         binary_image = cv2.threshold(answer_box, 0, 255,cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
-        self.show_image(binary_image)
         contours = cv2.findContours(binary_image, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
         contours = imutils.grab_contours(contours)
 
@@ -72,7 +67,6 @@ class BubbleSheetGrader:
 
         bubbles_contours = cont.sort_contours(bubbles_contours, method="left-to-right")[0]
         bubbles_contours = cont.sort_contours(bubbles_contours, method="top-to-bottom")[0]
-        self.extract_marked_bubbles(answer_box, bubbles_contours)
         return bubbles_contours
 
     def extract_marked_bubbles(self, binary_box, bubbles):
@@ -95,7 +89,6 @@ class BubbleSheetGrader:
                 row.append(0)
             else:
                 row.append(1)
-        self.find_answer_per_question(marked)
         return marked
 
     def find_answer_per_question(self, marked):
@@ -103,15 +96,60 @@ class BubbleSheetGrader:
         row_number = len(marked)
         answers = [[] for i in range(len(marked[0])//4)]
         for row in range(row_number):
-            for col, _ in enumerate((answers)):
-                answer = [marked[row][4*col], marked[row][4*col+1], marked[row][4*col+2], marked[row][4*col+3]]
-                answers[col].append(answer)
+            for col, answer in enumerate((answers)):
+                new_answer = [marked[row][4*col], marked[row][4*col+1],
+                marked[row][4*col+2], marked[row][4*col+3]]
+                answer.append(new_answer)
 
         final_answers = []
         for answer in answers:
             final_answers += answer
-        print(final_answers)
         return final_answers
+
+    def grading_answers(self, answers):
+        """Grading each answers"""
+        result = []
+        for i, answer in enumerate(answers):
+            if i >= len(self.correct_answers):
+                break
+            if sum(answer) > 1:
+                result.append(-1)
+            elif sum(answer) == 0:
+                result.append(0)
+            elif answer.index(1) + 1 == self.correct_answers[i]:
+                result.append(1)
+            else:
+                result.append(-1)
+        return result
+
+    def grading_exam(self, result):
+        """Grading exam"""
+        negative_answer = (-1 * result.count(-1)) if -1 in result else 0
+        positive_answer = 3*result.count(1) if 1 in result else 0
+        final_grade = (positive_answer + negative_answer)/(3*len(result)) * 100
+        return final_grade
+
+    def run(self):
+        """Running bubbles-sheet_grader"""
+        self.pre_process()
+        answer_box = self.detect_answer_box()
+        bubbles = self.detect_bubbles(answer_box)
+        marked = self.extract_marked_bubbles(answer_box, bubbles)
+        self.answers = self.find_answer_per_question(marked)
+        self.result = self.grading_answers(self.answers)
+        self.grade = self.grading_exam(self.result)
+
+    def get_results(self, request='001'):
+        """Return results based on requested type"""
+        results = {"answers" : [], "result" : [], "grade" : None}
+        if request[0] == '1':
+            results["answers"] = self.answers
+        if request[1] == '1':
+            results['result'] = self.result
+        if request[2] == '1':
+            results['grade'] = self.grade
+
+        return results
 
     def crop_contour_area(self, contour, image):
         """Crop contour area from input image"""
@@ -126,5 +164,5 @@ class BubbleSheetGrader:
         cv2.waitKey(0)
 
 bsg = BubbleSheetGrader('data/standardSample/sample (7).bmp')
-bsg.pre_process()
-bsg.detect_bubbles(bsg.detect_answer_box())
+bsg.run()
+print(bsg.get_results('010'))
