@@ -1,4 +1,3 @@
-import pickle
 import cv2
 import imutils
 from imutils import contours as cont
@@ -12,17 +11,12 @@ class BubbleSheetGrader:
 
         self.image = cv2.imread(path)
         self.image = imutils.resize(self.image, height = 1000)
-        self.box_template = []
-
-        with open('data/template/rectangle.temp', 'rb') as file:
-            self.box_template.append(pickle.load(file))
-        with open('data/template/square.temp', 'rb') as file:
-            self.box_template.append(pickle.load(file))
-        with open('data/template/bubble.temp', 'rb') as file:
-            self.bubble = pickle.load(file)
 
         self.pre_processed_image = None
-        
+        self.result = None
+        self.grade = None
+        self.answers = None
+
         self.correct_answers = [1, 1, 2, 1, 2, 1, 1, 2, 1, 4]
 
     def pre_process(self):
@@ -102,9 +96,10 @@ class BubbleSheetGrader:
         row_number = len(marked)
         answers = [[] for i in range(len(marked[0])//4)]
         for row in range(row_number):
-            for col, _ in enumerate((answers)):
-                answer = [marked[row][4*col], marked[row][4*col+1], marked[row][4*col+2], marked[row][4*col+3]]
-                answers[col].append(answer)
+            for col, answer in enumerate((answers)):
+                answer = [marked[row][4*col], marked[row][4*col+1],
+                marked[row][4*col+2], marked[row][4*col+3]]
+                answer.append(answer)
 
         final_answers = []
         for answer in answers:
@@ -144,14 +139,14 @@ class BubbleSheetGrader:
         self.result = self.grading_answers(self.answers)
         self.grade = self.grading_exam(self.result)
 
-    def get_results(self, type='001'):
+    def get_results(self, request='001'):
         """Return results based on requested type"""
         results = {"answers" : [], "result" : [], "grade" : None}
-        if type[0] == '1':
+        if request[0] == '1':
             results["answers"] = self.answers
-        if type[1] == '1':
+        if request[1] == '1':
             results['result'] = self.result
-        if type[2] == '1':
+        if request[2] == '1':
             results['grade'] = self.grade
 
         return results
