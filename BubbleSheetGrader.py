@@ -22,6 +22,8 @@ class BubbleSheetGrader:
             self.bubble = pickle.load(file)
 
         self.pre_processed_image = None
+        
+        self.correct_answers = [1, 1, 2, 1, 2, 1, 1, 2, 1, 4]
 
     def pre_process(self):
         """Pre processing image"""
@@ -110,8 +112,25 @@ class BubbleSheetGrader:
         final_answers = []
         for answer in answers:
             final_answers += answer
-        print(final_answers)
+        self.grading_answers(final_answers)
         return final_answers
+
+    def grading_answers(self, answers):
+        """Grading each answers"""
+        result = []
+        for i, answer in enumerate(answers):
+            if i >= len(self.correct_answers):
+                break
+            if sum(answer) > 1:
+                result.append(-1)
+            elif sum(answer) == 0:
+                result.append(0)
+            elif answer.index(1) + 1 == self.correct_answers[i]:
+                result.append(1)
+            else:
+                result.append(-1)
+        print(result)
+        return result
 
     def crop_contour_area(self, contour, image):
         """Crop contour area from input image"""
