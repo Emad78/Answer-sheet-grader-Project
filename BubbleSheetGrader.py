@@ -142,8 +142,19 @@ class BubbleSheetGrader:
         marked = self.extract_marked_bubbles(answer_box, bubbles)
         self.answers = self.find_answer_per_question(marked)
         self.result = self.grading_answers(self.answers)
-        self.final_grade = self.grading_exam(self.result)
-        print(self.final_grade)
+        self.grade = self.grading_exam(self.result)
+
+    def get_results(self, type='001'):
+        """Return results based on requested type"""
+        results = {"answers" : [], "result" : [], "grade" : None}
+        if type[0] == '1':
+            results["answers"] = self.answers
+        if type[1] == '1':
+            results['result'] = self.result
+        if type[2] == '1':
+            results['grade'] = self.grade
+
+        return results
 
     def crop_contour_area(self, contour, image):
         """Crop contour area from input image"""
@@ -159,3 +170,4 @@ class BubbleSheetGrader:
 
 bsg = BubbleSheetGrader('data/standardSample/sample (7).bmp')
 bsg.run()
+print(bsg.get_results('010'))
