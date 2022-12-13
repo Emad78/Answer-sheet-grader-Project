@@ -57,7 +57,6 @@ class BubbleSheetGrader:
         """Detecting bubbles in answer box"""
 
         binary_image = cv2.threshold(answer_box, 0, 255,cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
-        self.show_image(binary_image)
         contours = cv2.findContours(binary_image, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
         contours = imutils.grab_contours(contours)
 
@@ -74,7 +73,6 @@ class BubbleSheetGrader:
 
         bubbles_contours = cont.sort_contours(bubbles_contours, method="left-to-right")[0]
         bubbles_contours = cont.sort_contours(bubbles_contours, method="top-to-bottom")[0]
-        self.extract_marked_bubbles(answer_box, bubbles_contours)
         return bubbles_contours
 
     def extract_marked_bubbles(self, binary_box, bubbles):
@@ -97,7 +95,6 @@ class BubbleSheetGrader:
                 row.append(0)
             else:
                 row.append(1)
-        self.find_answer_per_question(marked)
         return marked
 
     def find_answer_per_question(self, marked):
@@ -112,7 +109,6 @@ class BubbleSheetGrader:
         final_answers = []
         for answer in answers:
             final_answers += answer
-        self.grading_answers(final_answers)
         return final_answers
 
     def grading_answers(self, answers):
@@ -129,7 +125,6 @@ class BubbleSheetGrader:
                 result.append(1)
             else:
                 result.append(-1)
-        self.grading_exam(result)
         return result
 
     def grading_exam(self, result):
@@ -137,8 +132,18 @@ class BubbleSheetGrader:
         negative_answer = (-1 * result.count(-1)) if -1 in result else 0
         positive_answer = 3*result.count(1) if 1 in result else 0
         final_grade = (positive_answer + negative_answer)/(3*len(result)) * 100
-        print(final_grade)
         return final_grade
+
+    def run(self):
+        """Running bubbles-sheet_grader"""
+        self.pre_process()
+        answer_box = self.detect_answer_box()
+        bubbles = self.detect_bubbles(answer_box)
+        marked = self.extract_marked_bubbles(answer_box, bubbles)
+        self.answers = self.find_answer_per_question(marked)
+        self.result = self.grading_answers(self.answers)
+        self.final_grade = self.grading_exam(self.result)
+        print(self.final_grade)
 
     def crop_contour_area(self, contour, image):
         """Crop contour area from input image"""
@@ -153,5 +158,4 @@ class BubbleSheetGrader:
         cv2.waitKey(0)
 
 bsg = BubbleSheetGrader('data/standardSample/sample (7).bmp')
-bsg.pre_process()
-bsg.detect_bubbles(bsg.detect_answer_box())
+bsg.run()
