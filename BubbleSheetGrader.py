@@ -97,9 +97,9 @@ class BubbleSheetGrader:
         answers = [[] for i in range(len(marked[0])//4)]
         for row in range(row_number):
             for col, answer in enumerate((answers)):
-                answer = [marked[row][4*col], marked[row][4*col+1],
+                new_answer = [marked[row][4*col], marked[row][4*col+1],
                 marked[row][4*col+2], marked[row][4*col+3]]
-                answer.append(answer)
+                answer.append(new_answer)
 
         final_answers = []
         for answer in answers:
